@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html>
+<head>
+   <title>Chat Test</title>
+   <script src="https://cdn.socket.io/4.5.4/socket.io.min.js"></script>
+   <style>
+       body {
+           font-family: Arial, sans-serif;
+           margin: 20px;
+           background-color: #f0f2f5;
+       }
+       .container {
+           max-width: 800px;
+           margin: 0 auto;
+           background-color: white;
+           border-radius: 8px;
+           box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+           padding: 20px;
+       }
+       .status-bar {
+           background-color: #f8f9fa;
+           padding: 10px;
+           border-radius: 4px;
+           margin-bottom: 15px;
+           font-size: 14px;
+       }
+       #messages {
+           height: 400px;
+           overflow-y: auto;
+           border: 1px solid #ddd;
+           border-radius: 4px;
+           padding: 15px;
+           margin-bottom: 15px;
+       }
+       .message {
+           margin-bottom: 10px;
+           padding: 8px 12px;
+           border-radius: 18px;
+           max-width: 70%;
+           word-wrap: break-word;
+       }
+       .sent {
+           background-color: #0084ff;
+           color: white;
+           margin-left: auto;
+       }
+       .received {
+           background-color: #e4e6eb;
+           color: black;
+           margin-right: auto;
+       }
+       .message-time {
+           font-size: 11px;
+           opacity: 0.7;
+           margin-top: 4px;
+       }
+       .input-area {
+           display: flex;
+           gap: 10px;
+           margin-bottom: 10px;
+       }
+       #messageInput {
+           flex-grow: 1;
+           padding: 10px 15px;
+           border: 1px solid #ddd;
+           border-radius: 20px;
+           outline: none;
+       }
+       #messageInput:focus {
+           border-color: #0084ff;
+       }
+       button {
+           padding: 8px 16px;
+           background-color: #0084ff;
+           color: white;
+           border: none;
+           border-radius: 4px;
+           cursor: pointer;
+       }
+       button:hover {
+           background-color: #0073e6;
+       }
+       #typingStatus {
+           height: 20px;
+           color: #65676b;
+           font-style: italic;
+           padding: 5px;
+           font-size: 12px;
+       }
+       .message-status {
+           font-size: 10px;
+           text-align: right;
+           margin-top: 2px;
+       }
+       .online-status {
+           color: #31a24c;
+           font-size: 12px;
+           margin-left: 5px;
+       }
+       .offline-status {
+           color: #65676b;
+           font-size: 12px;
+           margin-left: 5px;
+       }
+       .unread-counter {
+           background-color: #0084ff;
+           color: white;
+           border-radius: 50%;
+           padding: 2px 6px;
+           font-size: 12px;
+           margin-left: 8px;
+       }
+       .message-controls {
+           display: flex;
+           justify-content: space-between;
+           margin-top: 15px;
+           gap: 10px;
+       }
+       .debug-panel {
+           background: #f8f9fa;
+           padding: 10px;
+           margin-top: 15px;
+           border-radius: 4px;
+           font-size: 12px;
+       }
+       .message .read-status {
+           font-size: 10px;
+           color: #65676b;
+           text-align: right;
+           margin-top: 2px;
+       }
+   </style>
+</head>
+<body>
+   <div class="container">
+       <div class="status-bar">
+           <div>Connection Status: <span id="status">Disconnected</span></div>
+           <div>Current Chat: <span id="currentChat">None</span></div>
+           <div>Other User: <span id="otherUserStatus">Offline</span></div>
+           <div>Unread Messages: <span id="unreadCount">0</span></div>
+       </div>
+
+       <div id="messages"></div>
+       <div id="typingStatus"></div>
+
+       <div class="input-area">
+           <input type="text" id="messageInput" placeholder="Type a message..." autocomplete="off">
+           <button onclick="sendMessage()">Send</button>
+       </div>
+
+       <div class="message-controls">
+           <button onclick="markAllRead()">Mark All as Read</button>
+           <button onclick="testMessageReceived()">Test Message Received</button>
+           <button onclick="clearMessages()">Clear Messages</button>
+       </div>
+
+       <div class="debug-panel">
+           <div>Debug Info:</div>
+           <div>Last Event: <span id="lastEvent">None</span></div>
+           <div>Last Count Update: <span id="lastCountUpdate">None</span></div>
+       </div>
+   </div>
+
+   <script>
+       const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiI2Nzk4MmNjYWU5OWQyNmYzZjlmN2M2MTMiLCJpYXQiOjE3MzgwODcwMTMsImV4cCI6MTc0MDY3OTAxM30.rQaGjzI-NQYhx-Fvu-71wRN6iPAQUh2XqmiWJ9x7Hso';
+       const chatId = '6798326da506f9c71954ad72';
+       
+       const socket = io('http://localhost:5000', {
+            auth: { token },
+            transports: ['websocket']
+        });
+
+        // Connection Events
+        socket.on('connect', () => {
+            document.getElementById('status').textContent = 'Connected';
+            // Extract userId from token
+            const tokenData = JSON.parse(atob(token.split('.')[1]));
+            socket.userId = tokenData.userId;
+            console.log('Connected with userId:', socket.userId);
+            
+            // Emit join chat immediately after connection
+            socket.emit('join chat', chatId);
+            document.getElementById('currentChat').textContent = chatId;
+            
+            // Request initial online status
+            socket.emit('get online status', chatId);
+        });
+
+        socket.on('connect_error', (error) => {
+            console.error('Connection error:', error);
+            document.getElementById('status').textContent = 'Connection Error';
+        });
+
+        socket.on('disconnect', () => {
+            document.getElementById('status').textContent = 'Disconnected';
+        });
+
+        // Message Events
+        socket.on('message received', (message) => {
+            console.log('Message received from server:', message);
+            if (message && message.content) {
+                // Compare as strings to ensure proper comparison
+                const isSentByMe = message.sender._id.toString() === socket.userId.toString();
+                console.log('Message comparison:', {
+                    senderId: message.sender._id,
+                    myId: socket.userId,
+                    isSentByMe
+                });
+                addMessage(message, isSentByMe);
+            }
+        });
+
+        // Confirmation of message sent
+        socket.on('message sent', (message) => {
+            console.log('Message sent confirmation:', message);
+        });
+
+        // Error handling
+        socket.on('message error', (error) => {
+            console.error('Message error:', error);
+            alert('Failed to send message');
+        });
+
+        socket.on('unread count updated', (data) => {
+            console.log('Unread count updated:', data);
+            document.getElementById('unreadCount').textContent = data.count;
+            document.getElementById('lastCountUpdate').textContent = 
+                `Chat: ${data.chatId}, Count: ${data.count}`;
+        });
+
+        function addMessage(message, isSent) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${isSent ? 'sent' : 'received'}`;
+            messageDiv.setAttribute('data-message-id', message._id || Date.now());
+
+            const time = new Date(message.createdAt || Date.now()).toLocaleTimeString([], { 
+                hour: '2-digit', 
+                minute: '2-digit' 
+            });
+
+            const senderName = message.sender?.name || (isSent ? 'You' : 'User');
+        
+            messageDiv.innerHTML = `
+                <div style="font-size: 12px; margin-bottom: 4px;">${senderName}</div>
+                <div>${message.content}</div>
+                <div class="message-time">${time}</div>
+            `;
+
+            // Add read status element
+            const statusDiv = document.createElement('div');
+            statusDiv.className = 'message-status';
+            statusDiv.setAttribute('data-message-id', message._id);
+            statusDiv.textContent = isSent ? '✓ Sent' : '';
+            messageDiv.appendChild(statusDiv);
+
+            // Add individual message read control for testing
+            if (isSent) {
+                messageDiv.innerHTML += `
+                    <div class="read-status">
+                        <span>Status: </span>
+                        <span class="message-read-status">Sent</span>
+                        ${!isSent ? `
+                            <button onclick="markMessageRead('${message._id}')">
+                                Mark Read
+                            </button>
+                        ` : ''}
+                    </div>`;
+            }
+            
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+
+            // Mark messages as read if received
+            if (!isSent) {
+                socket.emit('mark read', { chatId });
+            }
+
+            updateDebugInfo('Message added: ' + (isSent ? 'Sent' : 'Received'));
+        }
+
+        function sendMessage() {
+            const messageInput = document.getElementById('messageInput');
+            const content = messageInput.value.trim();
+
+            if (content) {
+                console.log('Sending message:', { chatId, content, myId: socket.userId });
+                socket.emit('new message', { chatId, content });
+                messageInput.value = '';
+                stopTyping();
+            }
+        }
+
+        // Typing indicator
+        let typingTimeout;
+    
+        function stopTyping() {
+            socket.emit('stop typing', chatId);
+        }
+
+        document.getElementById('messageInput').addEventListener('input', () => {
+            clearTimeout(typingTimeout);
+            socket.emit('typing', chatId);
+        
+            typingTimeout = setTimeout(() => {
+                stopTyping();
+            }, 1000);
+        });
+
+        // Handle Enter key
+        document.getElementById('messageInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                sendMessage();
+            }
+        });
+
+        // Handle typing status
+        socket.on('typing', (data) => {
+            console.log('Typing indicator received:', data);
+            const typingDiv = document.getElementById('typingStatus');
+            if (data.userName) {
+                typingDiv.textContent = `${data.userName} is typing...`;
+            }
+        });
+
+        socket.on('stop typing', () => {
+            document.getElementById('typingStatus').textContent = '';
+        });
+
+        // Online status events
+        socket.on('user online', (data) => {
+            console.log('Online status received:', data);
+            if (typeof data === 'object' && data.userId !== socket.userId) {
+                updateUserStatus(data.isOnline);
+            } else if (typeof data === 'string' && data !== socket.userId) {
+                updateUserStatus(true);
+            }
+        });
+
+        socket.on('user offline', (userId) => {
+            console.log('User went offline:', userId);
+            if (userId !== socket.userId) {
+                updateUserStatus(false);
+            }
+        });
+
+        socket.on('online users', (users) => {
+            console.log('Initial online users:', users);
+            if (users && users.length > 0) {
+                const otherUser = users.find(user => user._id !== socket.userId);
+                if (otherUser) {
+                    updateUserStatus(otherUser.isOnline);
+                }
+            }
+        });
+
+        function updateUserStatus(isOnline) {
+            const otherUserStatus = document.getElementById('otherUserStatus');
+            otherUserStatus.textContent = isOnline ? 'Online' : 'Offline';
+            otherUserStatus.className = isOnline ? 'online-status' : 'offline-status';
+            console.log('Updated other user status:', isOnline ? 'Online' : 'Offline');
+        }
+
+        socket.on('messages read', ({ chatId, userId }) => {
+            console.log('Messages read by:', userId);
+            if (userId !== socket.userId) {
+                document.querySelectorAll('.message-read-status').forEach(status => {
+                    status.textContent = 'Read';
+                });
+                updateDebugInfo('Messages marked as read by: ' + userId);
+            }
+        });
+
+        function updateReadStatus(chatId) {
+            const statuses = document.querySelectorAll('.message-status');
+            statuses.forEach(status => {
+                if (status.textContent === '✓ Sent') {
+                    status.textContent = '✓✓ Read';
+                }
+            });
+        }
+
+        function testMessageReceived() {
+            const testMessage = {
+                _id: Date.now().toString(),
+                content: 'Test message for read receipt',
+                sender: { _id: 'test-user', name: 'Test User' },
+                createdAt: new Date(),
+                chatId
+            };
+            addMessage(testMessage, false);
+        }
+
+        function markMessageRead(messageId) {
+            socket.emit('message received', { messageId, chatId });
+            updateDebugInfo('Marked message as read: ' + messageId);
+        }
+
+        function markAllRead() {
+            socket.emit('mark read', { chatId });
+            updateDebugInfo('Marked all messages as read');
+        }
+
+        function clearMessages() {
+            document.getElementById('messages').innerHTML = '';
+            updateDebugInfo('Cleared all messages');
+        }
+
+        function updateDebugInfo(event) {
+            document.getElementById('lastEvent').textContent = event;
+        }
+
+        // Update visibility change handler
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                socket.emit('mark read', { chatId });
+            }
+        });
+   </script>
+</body>
+</html>
