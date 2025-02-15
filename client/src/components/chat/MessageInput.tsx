@@ -1,6 +1,6 @@
 import { Send } from 'lucide-react';
-import { useState } from 'react';
-import { useSendMessage } from '../../hooks/useChat';
+import { useState, useEffect } from 'react';
+import { useSocket } from '../../hooks/useSocket';
 
 interface MessageInputProps {
   chatId: string;
@@ -8,20 +8,35 @@ interface MessageInputProps {
 
 export const MessageInput = ({ chatId }: MessageInputProps) => {
   const [message, setMessage] = useState('');
-  const { mutate: sendMessage, isPending } = useSendMessage();
+  const { sendMessage, handleTyping, handleStopTyping } = useSocket();
+  const [typingTimeout, setTypingTimeout] = useState<NodeJS.Timeout>();
 
   const handleSend = () => {
-    if (!message.trim() || isPending) return;
+    if (!message.trim()) return;
     
-    sendMessage({
-      content: message.trim(),
-      chatId,
-    }, {
-      onSuccess: () => {
-        setMessage('');
-      },
-    });
+    const sent = sendMessage(chatId, message.trim());
+    if (sent) {
+      setMessage('');
+      handleStopTyping(chatId);
+    }
   };
+
+  useEffect(() => {
+    if (message) {
+      handleTyping(chatId);
+      clearTimeout(typingTimeout);
+      
+      const timeout = setTimeout(() => {
+        handleStopTyping(chatId);
+      }, 1000);
+      
+      setTypingTimeout(timeout);
+    }
+    
+    return () => {
+      clearTimeout(typingTimeout);
+    };
+  }, [message, chatId, handleTyping, handleStopTyping]);
 
   return (
     <div className="p-4 bg-white border-t border-gray-100">

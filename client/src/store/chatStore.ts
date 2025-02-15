@@ -1,5 +1,6 @@
 import { create } from 'zustand';
-import { Chat, Message, User } from '../types/chat';
+import { Chat, Message } from '../types/chat';
+import {User} from '../types/user';
 
 interface ChatState {
   chats: Chat[];
@@ -14,33 +15,83 @@ interface ChatState {
   setSelectedUsers: (users: User[]) => void;
 }
 
-export const useChatStore = create<ChatState>((set) => ({
+export const useChatStore = create<ChatState>((set, get) => ({
   chats: [],
   activeChat: null,
   messages: [],
   selectedUsers: [],
   
-  setChats: (chats) => set({ chats }),
+  setChats: (chats) => {
+    const currentChats = get().chats;
+    if (JSON.stringify(currentChats) !== JSON.stringify(chats)) {
+      set({ chats });
+    }
+  },
   
-  setActiveChat: (chat) => set({ activeChat: chat }),
+  setActiveChat: (chat) => {
+    const currentChat = get().activeChat;
+    if (JSON.stringify(currentChat) !== JSON.stringify(chat)) {
+      set({ activeChat: chat });
+    }
+  },
   
-  setMessages: (messages) => set({ messages }),
-  
-  addMessage: (message) => set((state) => ({
-    messages: [...state.messages, message],
-    chats: state.chats.map(chat => 
-      chat._id === message.chat._id 
-        ? { ...chat, latestMessage: message }
-        : chat
-    ),
-  })),
+  setMessages: (messages) => set(() => {
+    if (!Array.isArray(messages)) return { messages: [] };
+
+    const validMessages = messages
+      .filter(msg => msg?._id && msg?.content && msg?.sender)
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
+
+    console.log('Setting messages:', validMessages.length);
+    return { messages: validMessages };
+  }),
+
+  addMessage: (message) => set((state) => {
+    if (!message?._id || !message?.content || !message?.sender) {
+      console.error('Invalid message format in store:', message);
+      return state;
+    }
+
+    if (state.messages.some(m => m._id === message._id)) {
+      return state;
+    }
+
+    const updatedChats = state.chats.map(chat => {
+      if (chat._id === message.chat._id) {
+        return {
+          ...chat,
+          latestMessage: message
+        };
+      }
+      return chat;
+    });
+
+    // Sort chats to bring the most recent to top
+    const sortedChats = [...updatedChats].sort((a, b) => {
+      const aTime = new Date(a.latestMessage?.createdAt || 0).getTime();
+      const bTime = new Date(b.latestMessage?.createdAt || 0).getTime();
+      return bTime - aTime;
+    });
+
+    return {
+      messages: [...state.messages, message],
+      chats: sortedChats,
+      activeChat: state.activeChat?._id === message.chat._id
+        ? { ...state.activeChat, latestMessage: message }
+        : state.activeChat,
+      selectedUsers: state.selectedUsers  // Preserve other state
+    };
+  }),
   
   updateChat: (updatedChat) => set((state) => ({
     chats: state.chats.map(chat => 
-      chat._id === updatedChat._id ? updatedChat : chat
+      chat._id === updatedChat._id ? {
+        ...updatedChat,
+        latestMessage: chat.latestMessage // Preserve latest message
+      } : chat
     ),
     activeChat: state.activeChat?._id === updatedChat._id 
-      ? updatedChat 
+      ? { ...updatedChat, latestMessage: state.activeChat.latestMessage }
       : state.activeChat,
   })),
   

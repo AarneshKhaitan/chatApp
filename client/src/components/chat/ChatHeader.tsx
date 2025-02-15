@@ -84,29 +84,21 @@ export const ChatHeader = ({ chat, onChatUpdate }: ChatHeaderProps) => {
           >
             <MoreVertical className="w-5 h-5 text-gray-500" />
           </button>
-          {isMenuOpen && (
+          {isMenuOpen && chat.isGroupChat && (
             <div className="absolute right-0 mt-2 w-48 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5">
               <div className="py-1">
-                {chat.isGroupChat ? (
-                  <>
-                    <button 
-                      onClick={handleEditClick}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
-                    >
-                      Edit Group
-                    </button>
-                    <button 
-                      onClick={handleLeaveGroup}
-                      className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
-                    >
-                      Leave Group
-                    </button>
-                  </>
-                ) : (
-                  <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                    Clear Chat
-                  </button>
-                )}
+                <button 
+                  onClick={handleEditClick}
+                  className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                >
+                  Edit Group
+                </button>
+                <button 
+                  onClick={handleLeaveGroup}
+                  className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
+                >
+                  Leave Group
+                </button>
               </div>
             </div>
           )}
