@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, useState } from 'react';
 import { useAuthStore } from '../store/authStore';
 import { useChatStore } from '../store/chatStore';
 import { socketManager } from '../socket/socketManager';
@@ -7,6 +7,7 @@ import { Message } from '../types/chat';
 export const useSocket = () => {
   const { token } = useAuthStore();
   const { activeChat, addMessage } = useChatStore();
+  const [typingUsers, setTypingUsers] = useState<{ [key: string]: string }>({});
 
   useEffect(() => {
     if (token) {
@@ -53,6 +54,38 @@ export const useSocket = () => {
     socketManager.emitStopTyping(chatId);
   }, []);
 
+  // Add typing events listener
+  useEffect(() => {
+    const handleUserTyping = ({ userId, userName }: { userId: string; userName: string }) => {
+      setTypingUsers(prev => ({ ...prev, [userId]: userName }));
+      
+      // Auto-remove typing indicator after 3 seconds
+      setTimeout(() => {
+        setTypingUsers(prev => {
+          const newState = { ...prev };
+          delete newState[userId];
+          return newState;
+        });
+      }, 3000);
+    };
+
+    const handleStopTyping = ({ userId }: { userId: string }) => {
+      setTypingUsers(prev => {
+        const newState = { ...prev };
+        delete newState[userId];
+        return newState;
+      });
+    };
+
+    socketManager.on('userTyping', handleUserTyping);
+    socketManager.on('userStoppedTyping', handleStopTyping);
+
+    return () => {
+      socketManager.off('userTyping', handleUserTyping);
+      socketManager.off('userStoppedTyping', handleStopTyping);
+    };
+  }, []);
+
   return {
     sendMessage: (chatId: string, content: string) => {
       if (!chatId || !content?.trim()) {
@@ -69,6 +102,7 @@ export const useSocket = () => {
       return true;
     },
     handleTyping,
-    handleStopTyping
+    handleStopTyping,
+    typingUsers
   };
 };

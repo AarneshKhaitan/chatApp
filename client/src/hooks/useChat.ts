@@ -42,29 +42,6 @@ export const useMessages = (chatId: string | undefined) => {
   });
 };
 
-interface SendMessageResponse {
-  data: Message;
-}
-
-export const useSendMessage = () => {
-  const queryClient = useQueryClient();
-
-  return useMutation<SendMessageResponse, Error, { content: string; chatId: string }>({
-    mutationFn: async (message) => {
-      const response = await chatApi.sendMessage(message);
-      return { data: response };
-    },
-    onSuccess: (response, variables) => {
-      queryClient.setQueryData(
-        ['messages', variables.chatId],
-        (oldData: Message[] = []) => {
-          return [...oldData, response.data];
-        }
-      );
-    },
-  });
-};
-
 export const useCreateChat = () => {
   const queryClient = useQueryClient();
 
@@ -73,12 +50,6 @@ export const useCreateChat = () => {
     onSuccess: (newChat) => {
       queryClient.setQueryData<Chat[]>(['chats'], (old = []) => [newChat, ...old]);
     },
-  });
-};
-
-export const useSearchUsers = () => {
-  return useMutation({
-    mutationFn: chatApi.searchUsers,
   });
 };
 
@@ -120,6 +91,16 @@ export const useGroupChat = () => {
       mutationFn: (chatId: string) => chatApi.leaveGroup(chatId),
       onSuccess: () => {
         queryClient.invalidateQueries({ queryKey: ['chats'] });
+      },
+    }),
+
+    makeAdmin: useMutation({
+      mutationFn: ({ chatId, userId }: { chatId: string; userId: string }) =>
+        chatApi.makeAdmin(chatId, userId),
+      onSuccess: (updatedChat) => {
+        queryClient.setQueryData<Chat[]>(['chats'], (old = []) =>
+          old.map((chat) => (chat._id === updatedChat._id ? updatedChat : chat))
+        );
       },
     }),
   };

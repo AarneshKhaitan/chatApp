@@ -2,11 +2,11 @@ import { useState } from 'react';
 import { Search, UserMinus, Shield } from 'lucide-react';
 import { Chat } from '../../types/chat';
 import { User } from '../../types/user';
-import { chatApi } from '../../api/chatApi';
 import { useAuthStore } from '../../store/authStore';
 import { Modal } from '../shared/Modal';
 import { useChatStore } from '../../store/chatStore';
-import { useQueryClient } from '@tanstack/react-query';
+import { useGroupChat } from '../../hooks/useChat';
+import { useSearchUsers } from '../../hooks/useUser';
 
 interface EditGroupModalProps {
   chat: Chat;
@@ -16,79 +16,98 @@ interface EditGroupModalProps {
 }
 
 export const EditGroupModal = ({ chat, isOpen, onClose, onUpdate }: EditGroupModalProps) => {
-  const queryClient = useQueryClient();
   const { user: currentUser } = useAuthStore();
   const { setActiveChat, updateChat } = useChatStore();
   const [chatName, setChatName] = useState(chat.chatName || '');
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<User[]>([]);
-  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState('');
+
+  const { updateGroupName, addToGroup, removeFromGroup, makeAdmin } = useGroupChat();
+  const searchUsersMutation = useSearchUsers();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setIsSubmitting(true);
     setError('');
 
-    try {
-      const updatedChat = await chatApi.updateGroupName(chat._id, chatName);
-      updateChat(updatedChat);
-      setActiveChat(updatedChat);
-      queryClient.invalidateQueries({ queryKey: ['chats'] });
-      onUpdate(updatedChat);
-      onClose();
-    } catch (err) {
-      setError('Failed to update group name');
-    } finally {
-      setIsSubmitting(false);
-    }
+    updateGroupName.mutate(
+      { chatId: chat._id, chatName },
+      {
+        onSuccess: (updatedChat) => {
+          updateChat(updatedChat);
+          setActiveChat(updatedChat);
+          onUpdate(updatedChat);
+          onClose();
+        },
+        onError: () => {
+          setError('Failed to update group name');
+        },
+      }
+    );
   };
 
   const handleSearch = async (query: string) => {
     setSearchQuery(query);
     if (query.trim()) {
-      try {
-        const results = await chatApi.searchUsers(query);
-        setSearchResults(results.filter(u => !chat.users.some(cu => cu._id === u._id)));
-      } catch (err) {
-        console.error('Search failed:', err);
-      }
+      searchUsersMutation.mutate(query, {
+        onSuccess: (results) => {
+          setSearchResults(results.filter(u => !chat.users.some(cu => cu._id === u._id)));
+        },
+        onError: () => {
+          console.error('Search failed');
+        }
+      });
     } else {
       setSearchResults([]);
     }
   };
 
   const handleAddUser = async (userId: string) => {
-    try {
-      const updatedChat = await chatApi.addToGroup(chat._id, userId);
-      updateChat(updatedChat);
-      setActiveChat(updatedChat);
-      queryClient.invalidateQueries({ queryKey: ['chats'] });
-      onUpdate(updatedChat);
-      setSearchResults(searchResults.filter(u => u._id !== userId));
-    } catch (err) {
-      setError('Failed to add user');
-    }
+    addToGroup.mutate(
+      { chatId: chat._id, userIds: userId },
+      {
+        onSuccess: (updatedChat) => {
+          updateChat(updatedChat);
+          setActiveChat(updatedChat);
+          onUpdate(updatedChat);
+          setSearchResults(searchResults.filter(u => u._id !== userId));
+        },
+        onError: () => {
+          setError('Failed to add user');
+        }
+      }
+    );
   };
 
   const handleRemoveUser = async (userId: string) => {
-    try {
-      const updatedChat = await chatApi.removeFromGroup(chat._id, userId);
-      onUpdate(updatedChat);
-      setActiveChat(updatedChat);
-    } catch (err) {
-      setError('Failed to remove user');
-    }
+    removeFromGroup.mutate(
+      { chatId: chat._id, userId },
+      {
+        onSuccess: (updatedChat) => {
+          onUpdate(updatedChat);
+          setActiveChat(updatedChat);
+        },
+        onError: () => {
+          setError('Failed to remove user');
+        }
+      }
+    );
   };
 
   const handleMakeAdmin = async (userId: string) => {
-    try {
-      const updatedChat = await chatApi.makeAdmin(chat._id, userId);
-      onUpdate(updatedChat);
-      setActiveChat(updatedChat);
-    } catch (err) {
-      setError('Failed to make user admin');
-    }
+    makeAdmin.mutate(
+      { chatId: chat._id, userId },
+      {
+        onSuccess: (updatedChat) => {
+          updateChat(updatedChat);
+          setActiveChat(updatedChat);
+          onUpdate(updatedChat);
+        },
+        onError: () => {
+          setError('Failed to make user admin');
+        }
+      }
+    );
   };
 
   const isAdmin = (userId: string) => {
@@ -211,12 +230,12 @@ export const EditGroupModal = ({ chat, isOpen, onClose, onUpdate }: EditGroupMod
           </button>
           <button
             type="submit"
-            disabled={isSubmitting}
+            disabled={updateGroupName.isPending}
             className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-900 
               transition-all duration-200 transform hover:scale-105
               disabled:bg-gray-200 disabled:text-gray-400 disabled:transform-none"
           >
-            {isSubmitting ? 'Saving...' : 'Save Changes'}
+            {updateGroupName.isPending ? 'Saving...' : 'Save Changes'}
           </button>
         </div>
       </form>

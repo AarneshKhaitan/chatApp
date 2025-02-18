@@ -1,7 +1,7 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Message } from '../../types/chat';
 import { format, isToday, isYesterday } from 'date-fns';
-import { socketManager } from '../../socket/socketManager';
+import { useSocket } from '../../hooks/useSocket';
 
 interface ChatBoxProps {
   messages: Message[];
@@ -10,8 +10,8 @@ interface ChatBoxProps {
 }
 
 export const ChatBox = ({ messages, currentUserId, chatId }: ChatBoxProps) => {
-  const [typingUsers, setTypingUsers] = useState<{ [key: string]: string }>({});
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { handleTyping, handleStopTyping, typingUsers } = useSocket();
 
   // Add scroll to bottom effect
   const scrollToBottom = () => {
@@ -23,31 +23,13 @@ export const ChatBox = ({ messages, currentUserId, chatId }: ChatBoxProps) => {
     scrollToBottom();
   }, [messages]);
 
+  // Handle typing events
   useEffect(() => {
-    const handleTyping = ({ chatId: typingChatId, userId, userName }: any) => {
-      if (typingChatId === chatId && userId !== currentUserId) {
-        setTypingUsers(prev => ({ ...prev, [userId]: userName }));
-      }
-    };
-
-    const handleStopTyping = ({ chatId: typingChatId, userId }: any) => {
-      if (typingChatId === chatId) {
-        setTypingUsers(prev => {
-          const newState = { ...prev };
-          delete newState[userId];
-          return newState;
-        });
-      }
-    };
-
-    socketManager.on('userTyping', handleTyping);
-    socketManager.on('userStoppedTyping', handleStopTyping);
-
+    handleTyping(chatId);
     return () => {
-      socketManager.off('userTyping', handleTyping);
-      socketManager.off('userStoppedTyping', handleStopTyping);
+      handleStopTyping(chatId);
     };
-  }, [chatId, currentUserId]);
+  }, [chatId, handleTyping, handleStopTyping]);
 
   const getDateLabel = (date: Date) => {
     if (isToday(date)) return 'Today';

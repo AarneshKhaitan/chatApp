@@ -1,41 +1,18 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link, useNavigate } from 'react-router-dom';
-import { useMutation } from '@tanstack/react-query';
-import toast from 'react-hot-toast';
+import { Link } from 'react-router-dom';
 import { LoginFormData, loginSchema } from '../types/auth';
 import { useAuth } from '../hooks/useAuth';
-import { ApiError, authApi } from '../api/authApi';
 
 const Login = () => {
-  const navigate = useNavigate();
-  const { login } = useAuth();
+  const { login, isLoading } = useAuth();
   
   const { register, handleSubmit, formState: { errors } } = useForm<LoginFormData>({
     resolver: zodResolver(loginSchema)
   });
 
-  const loginMutation = useMutation({
-    mutationFn: (data: LoginFormData) => authApi.login(data),
-    onSuccess: (data) => {
-      if (!data.token) {
-        toast.error('Authentication failed');
-        return;
-      }
-      login(data.token);
-      toast.success('Login successful!');
-      navigate('/chat');
-    },
-    onError: (error: unknown) => {
-      const message = error instanceof ApiError 
-        ? error.message 
-        : 'Authentication failed';
-      toast.error(message);
-    },
-  });
-
   const onSubmit = (data: LoginFormData) => {
-    loginMutation.mutate(data);
+    login(data);
   };
 
   return (
@@ -83,17 +60,18 @@ const Login = () => {
 
           <button
             type="submit"
-            disabled={loginMutation.isPending}
+            disabled={isLoading.login}
             className="w-full py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium 
               text-white bg-[#FF6B3D] hover:bg-[#FF5722] transition-all duration-200
               focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF6B3D] focus:ring-offset-black
               disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
           >
-            {loginMutation.isPending ? 'Signing in...' : 'Sign in'}
+            {isLoading.login ? 'Signing in...' : 'Sign in'}
           </button>
         </form>
       </div>
     </div>
   );
 };
+
 export default Login;

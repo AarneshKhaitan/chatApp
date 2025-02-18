@@ -2,46 +2,18 @@ import { useEffect, useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Link, useNavigate, useParams } from 'react-router-dom';
-import { useMutation } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { ResetPasswordFormData, resetPasswordSchema } from '../types/auth';
-import { ApiError, authApi } from '../api/authApi';
+import { useAuth } from '../hooks/useAuth';
 
 const ResetPassword = () => {
   const { token } = useParams<{ token: string }>();
   const navigate = useNavigate();
+  const { resetPassword, isLoading } = useAuth();
   const [isValidToken, setIsValidToken] = useState(true);
   
   const { register, handleSubmit, formState: { errors } } = useForm<ResetPasswordFormData>({
     resolver: zodResolver(resetPasswordSchema)
-  });
-
-  const resetPasswordMutation = useMutation({
-    mutationFn: (data: ResetPasswordFormData) => {
-      if (!token) {
-        setIsValidToken(false);
-        throw new Error('Reset token is missing');
-      }
-      return authApi.resetPassword(token, data);
-    },
-    onSuccess: (data) => {
-      toast.success(data.message || 'Password has been reset successfully');
-      setTimeout(() => {
-        navigate('/login');
-      }, 2000);
-    },
-    onError: (error: unknown) => {
-      const message = error instanceof ApiError 
-        ? error.message 
-        : error instanceof Error
-          ? error.message
-          : 'Failed to reset password';
-      toast.error(message);
-      if (message.includes('token')) {
-        setIsValidToken(false);
-        setTimeout(() => navigate('/forgot-password'), 2000);
-      }
-    },
   });
 
   useEffect(() => {
@@ -69,6 +41,11 @@ const ResetPassword = () => {
     );
   }
 
+  const onSubmit = (data: ResetPasswordFormData) => {
+    if (!token) return;
+    resetPassword({ token, data });
+  };
+
   return (
     <div className="min-h-screen w-screen flex items-center justify-center bg-black p-4 md:p-8">
       <div className="max-w-md w-full space-y-6 bg-black/95 backdrop-blur-sm p-6 md:p-8 rounded-xl border border-gray-800">
@@ -81,7 +58,7 @@ const ResetPassword = () => {
           </p>
         </div>
 
-        <form className="mt-6 space-y-5" onSubmit={handleSubmit((data) => resetPasswordMutation.mutate(data))}>
+        <form className="mt-6 space-y-5" onSubmit={handleSubmit(onSubmit)}>
           <div className="space-y-4">
             {[
               { name: 'password', type: 'password', placeholder: 'New password' },
@@ -107,13 +84,13 @@ const ResetPassword = () => {
 
           <button
             type="submit"
-            disabled={resetPasswordMutation.isPending}
+            disabled={isLoading.resetPassword}
             className="w-full py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium 
               text-white bg-[#FF6B3D] hover:bg-[#FF5722] transition-all duration-200
               focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF6B3D] focus:ring-offset-black
               disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
           >
-            {resetPasswordMutation.isPending ? 'Resetting...' : 'Reset Password'}
+            {isLoading.resetPassword ? 'Resetting...' : 'Reset Password'}
           </button>
 
           <div className="text-center">

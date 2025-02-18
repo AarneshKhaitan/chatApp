@@ -1,36 +1,18 @@
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { Link, useNavigate } from 'react-router-dom';
-import { useMutation } from '@tanstack/react-query';
-import toast from 'react-hot-toast';
+import { Link } from 'react-router-dom';
 import { RegisterFormData, registerSchema } from '../types/auth';
-import { ApiError, authApi } from '../api/authApi';
+import { useAuth } from '../hooks/useAuth';
 
 const SignUp = () => {
-  const navigate = useNavigate();
+  const { register: registerUser, isLoading } = useAuth();
   
   const { register, handleSubmit, formState: { errors } } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema)
   });
 
-  const signupMutation = useMutation({
-    mutationFn: (data: RegisterFormData) => authApi.register(data),
-    onSuccess: (data) => {
-      console.log('Registration Success:', data);
-      toast.success(data.message);
-      navigate('/login');
-    },
-    onError: (error: unknown) => {
-      console.error('Registration Error:', error);
-      const message = error instanceof ApiError 
-        ? error.message 
-        : 'Unable to connect to server';
-      toast.error(message);
-    },
-  });
-
   const onSubmit = (data: RegisterFormData) => {
-    signupMutation.mutate(data);
+    registerUser(data);
   };
 
   return (
@@ -79,13 +61,13 @@ const SignUp = () => {
 
           <button
             type="submit"
-            disabled={signupMutation.isPending}
+            disabled={isLoading.register}
             className="w-full py-2.5 px-4 border border-transparent rounded-lg text-sm font-medium 
               text-white bg-[#FF6B3D] hover:bg-[#FF5722] transition-all duration-200
               focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[#FF6B3D] focus:ring-offset-black
               disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-105"
           >
-            {signupMutation.isPending ? 'Creating account...' : 'Create account'}
+            {isLoading.register ? 'Creating account...' : 'Create account'}
           </button>
 
           <p className="text-xs text-gray-500 text-center">
