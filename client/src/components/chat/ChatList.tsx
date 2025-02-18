@@ -4,19 +4,19 @@ import { format, isToday } from 'date-fns';
 import { useAuthStore } from '../../store/authStore';
 import { useChats } from '../../hooks/useChat';
 import { useState, useMemo, useCallback } from 'react';
-import { NewChatButton } from './NewChatButton';
 import { LogOut } from 'lucide-react'; // Add this import
-import { useNavigate } from 'react-router-dom'; // Add this import
-import { authApi } from '../../api/authApi'; // Add this import
-import { Modal } from '../shared/Modal';  // Add this import
+import { Plus } from 'lucide-react';  // Add this import
 
-export const ChatList = () => {
+interface ChatListProps {
+  onLogoutClick: () => void;
+  onNewChat: () => void;  // Add this prop
+}
+
+export const ChatList = ({ onLogoutClick, onNewChat }: ChatListProps) => {
     const { activeChat, setActiveChat } = useChatStore();
     const { user } = useAuthStore();
     const { data: chats = [], isLoading, error } = useChats();
     const [searchQuery, setSearchQuery] = useState('');
-    const navigate = useNavigate(); // Add this
-    const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
     // Memoize helper functions
 
@@ -90,28 +90,46 @@ export const ChatList = () => {
 
     const renderChatItem = useCallback((chat: Chat) => {
         if (!chat?._id) return null;
-
+    
+        const isActiveOrHover = activeChat?._id === chat._id ? 'bg-black' : 'bg-white hover:bg-black';
+        
         return (
             <div
                 key={chat._id}
-                className={`p-4 flex items-center cursor-pointer hover:bg-gray-50 
-                ${activeChat?._id === chat._id ? 'bg-gray-50' : ''}`}
+                className={`p-4 flex items-center cursor-pointer transition-colors duration-200 group
+                    ${isActiveOrHover}`}
                 onClick={() => setActiveChat(chat)}
             >
-                <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600">
+                <div className={`w-10 h-10 rounded-lg border flex items-center justify-center
+                    ${activeChat?._id === chat._id 
+                        ? 'bg-white border-white text-black' 
+                        : 'bg-black border-black text-white group-hover:bg-white group-hover:border-white group-hover:text-black'}`}
+                >
                     {getChatInitial(chat)}
                 </div>
-                <div className="ml-3 flex-1">
-                    <p className="font-medium text-sm text-gray-900">
+                <div className="ml-3 flex-1 min-w-0">
+                    <p className={`font-medium text-sm
+                        ${activeChat?._id === chat._id 
+                            ? 'text-white' 
+                            : 'text-gray-900 group-hover:text-white'}`}
+                    >
                         {getChatDisplayName(chat)}
                     </p>
-                    <p className="text-xs text-gray-500 truncate min-h-[1.25rem]">
+                    <p className={`text-xs truncate min-h-[1.25rem]
+                        ${activeChat?._id === chat._id 
+                            ? 'text-gray-400' 
+                            : 'text-gray-500 group-hover:text-gray-400'}`}
+                    >
                         {chat.latestMessage?.content || 'No messages yet'}
                     </p>
                 </div>
-                <div className="flex flex-col items-end space-y-1">
+                <div className="flex flex-col items-end space-y-1 ml-2">
                     {chat.latestMessage?.createdAt && (
-                        <span className="text-xs text-gray-500">
+                        <span className={`text-xs
+                            ${activeChat?._id === chat._id 
+                                ? 'text-gray-400' 
+                                : 'text-gray-500 group-hover:text-gray-400'}`}
+                        >
                             {getMessageDateTime(chat.latestMessage.createdAt)}
                         </span>
                     )}
@@ -119,15 +137,6 @@ export const ChatList = () => {
             </div>
         );
     }, [activeChat?._id, getChatDisplayName, getChatInitial, getMessageDateTime, setActiveChat]);
-
-    const handleLogout = async () => {
-        try {
-            await authApi.logout();
-            navigate('/');
-        } catch (error) {
-            console.error('Logout failed:', error);
-        }
-    };
 
     if (isLoading) {
         return <div className="h-full flex items-center justify-center">Loading...</div>;
@@ -139,15 +148,23 @@ export const ChatList = () => {
 
     return (
         <>
-            <div className="h-full flex flex-col">
-                <div className="p-4 border-b border-gray-100 flex items-center gap-2">
+            <div className="h-full flex flex-col bg-white">
+                <div className="p-4 border-b border-gray-200 flex items-center gap-2">
                     <input 
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
-                        className="flex-1 px-4 py-3 text-sm bg-gray-50 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-900"
+                        className="flex-1 px-4 py-3 text-sm bg-gray-100 border border-gray-200 rounded-lg 
+                            text-gray-900 placeholder:text-gray-500 
+                            focus:outline-none focus:ring-2 focus:ring-black focus:border-black
+                            transition-all duration-200"
                         placeholder="Search chats..."
                     />
-                    <NewChatButton />
+                    <button
+                        onClick={onNewChat}
+                        className="p-2 rounded-lg bg-black text-white transition-all duration-200 transform hover:scale-105"
+                    >
+                        <Plus className="w-5 h-5" />
+                    </button>
                 </div>
                 <div className="flex-1 overflow-y-auto">
                     {!sortedAndFilteredChats.length ? (
@@ -159,43 +176,18 @@ export const ChatList = () => {
                     )}
                 </div>
                 
-                {/* Fixed footer section */}
-                <div className="p-4 border-t border-gray-100">
+                <div className="p-4 border-t border-gray-200">
                     <button
-                        onClick={() => setIsLogoutModalOpen(true)}
-                        className="w-full flex items-center justify-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg"
+                        onClick={onLogoutClick}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2 
+                            text-white bg-black rounded-lg
+                            transition-all duration-200 transform hover:scale-105"
                     >
                         <LogOut className="w-4 h-4" />
                         <span>Logout</span>
                     </button>
                 </div>
             </div>
-
-            <Modal
-                isOpen={isLogoutModalOpen}
-                onClose={() => setIsLogoutModalOpen(false)}
-                title="Confirm Logout"
-            >
-                <div className="space-y-4">
-                    <p className="text-gray-600">
-                        Are you sure you want to logout?
-                    </p>
-                    <div className="flex justify-end gap-3">
-                        <button
-                            onClick={() => setIsLogoutModalOpen(false)}
-                            className="px-4 py-2 text-gray-500 hover:bg-gray-50 rounded-lg"
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            onClick={handleLogout}
-                            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
-                        >
-                            Logout
-                        </button>
-                    </div>
-                </div>
-            </Modal>
         </>
     );
 };

@@ -199,19 +199,4 @@ export const chatApi = {
       throw new ApiError(500, 'Failed to leave group');
     }
   },
-
-  // Mark messages as read
-  markAsRead: async (chatId: string): Promise<void> => {
-    try {
-      await api.put(`/api/chats/${chatId}/read`);
-    } catch (error) {
-      if (axios.isAxiosError(error)) {
-        throw new ApiError(
-          error.response?.status || 500,
-          error.response?.data?.message || 'Failed to mark messages as read'
-        );
-      }
-      throw new ApiError(500, 'Failed to mark messages as read');
-    }
-  },
 };

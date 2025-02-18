@@ -106,14 +106,16 @@ export const EditGroupModal = ({ chat, isOpen, onClose, onUpdate }: EditGroupMod
       <form onSubmit={handleSubmit}>
         {/* Group Name Input */}
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-900 mb-2">
             Group Name
           </label>
           <input
             type="text"
             value={chatName}
             onChange={(e) => setChatName(e.target.value)}
-            className="w-full p-2 border rounded-lg"
+            className="w-full p-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 
+              placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-black focus:border-black
+              transition-all duration-200"
             placeholder="Enter group name"
             required
           />
@@ -122,7 +124,7 @@ export const EditGroupModal = ({ chat, isOpen, onClose, onUpdate }: EditGroupMod
         {/* Admin Section */}
         {isAdmin(currentUser?._id || '') && (
           <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-2">
+            <label className="block text-sm font-medium text-gray-900 mb-2">
               Add Members
             </label>
             <div className="relative">
@@ -130,20 +132,22 @@ export const EditGroupModal = ({ chat, isOpen, onClose, onUpdate }: EditGroupMod
                 type="text"
                 value={searchQuery}
                 onChange={(e) => handleSearch(e.target.value)}
-                className="w-full p-2 border rounded-lg"
+                className="w-full p-2 bg-gray-100 border border-gray-200 rounded-lg text-gray-900 
+                  placeholder:text-gray-500 focus:outline-none focus:ring-2 focus:ring-black focus:border-black
+                  transition-all duration-200"
                 placeholder="Search users by email"
               />
               <Search className="absolute right-3 top-2.5 text-gray-400 w-5 h-5" />
             </div>
             {searchResults.length > 0 && (
-              <div className="mt-2 border rounded-lg divide-y">
+              <div className="mt-2 border border-gray-200 rounded-lg divide-y divide-gray-200">
                 {searchResults.map(user => (
-                  <div key={user._id} className="p-2 flex justify-between items-center">
-                    <span>{user.name}</span>
+                  <div key={user._id} className="p-2 flex justify-between items-center hover:bg-gray-50">
+                    <span className="text-gray-900">{user.name}</span>
                     <button
                       type="button"
                       onClick={() => handleAddUser(user._id)}
-                      className="text-blue-500 hover:text-blue-600"
+                      className="text-[#FF6B3D] hover:text-[#FF5722] transition-colors duration-200"
                     >
                       Add
                     </button>
@@ -156,20 +160,20 @@ export const EditGroupModal = ({ chat, isOpen, onClose, onUpdate }: EditGroupMod
 
         {/* Members List */}
         <div className="mb-4">
-          <label className="block text-sm font-medium text-gray-700 mb-2">
+          <label className="block text-sm font-medium text-gray-900 mb-2">
             Members
           </label>
-          <div className="border rounded-lg divide-y text-gray-900">
+          <div className="border border-gray-200 rounded-lg divide-y divide-gray-200">
             {chat.users.map(user => (
               user._id !== currentUser?._id && (
-                <div key={user._id} className="p-2 flex justify-between items-center">
-                  <span>{user.name}</span>
+                <div key={user._id} className="p-2 flex justify-between items-center hover:bg-gray-50">
+                  <span className="text-gray-900">{user.name}</span>
                   <div className="flex gap-2">
                     {isAdmin(currentUser?._id || '') && !isAdmin(user._id) && (
                       <button
                         type="button"
                         onClick={() => handleMakeAdmin(user._id)}
-                        className="text-yellow-500 hover:text-yellow-600"
+                        className="text-[#FF6B3D] hover:text-[#FF5722] transition-colors duration-200"
                       >
                         <Shield className="w-5 h-5" />
                       </button>
@@ -178,7 +182,7 @@ export const EditGroupModal = ({ chat, isOpen, onClose, onUpdate }: EditGroupMod
                       <button
                         type="button"
                         onClick={() => handleRemoveUser(user._id)}
-                        className="text-red-500 hover:text-red-600"
+                        className="text-red-500 hover:text-red-600 transition-colors duration-200"
                       >
                         <UserMinus className="w-5 h-5" />
                       </button>
@@ -200,14 +204,17 @@ export const EditGroupModal = ({ chat, isOpen, onClose, onUpdate }: EditGroupMod
           <button
             type="button"
             onClick={onClose}
-            className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+            className="px-4 py-2 text-black bg-white border border-gray-200 rounded-lg 
+              hover:bg-gray-100 transition-all duration-200"
           >
             Cancel
           </button>
           <button
             type="submit"
             disabled={isSubmitting}
-            className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 disabled:opacity-50"
+            className="px-4 py-2 bg-black text-white rounded-lg hover:bg-gray-900 
+              transition-all duration-200 transform hover:scale-105
+              disabled:bg-gray-200 disabled:text-gray-400 disabled:transform-none"
           >
             {isSubmitting ? 'Saving...' : 'Save Changes'}
           </button>

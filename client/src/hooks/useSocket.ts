@@ -20,7 +20,6 @@ export const useSocket = () => {
   useEffect(() => {
     if (activeChat?._id) {
       socketManager.joinChat(activeChat._id);
-      // Remove markMessagesAsRead call
     }
   }, [activeChat?._id]);
 
@@ -36,7 +35,6 @@ export const useSocket = () => {
         // Add message to store immediately
         addMessage(message);
 
-        // Remove mark as read call
       } catch (error) {
         console.error('Error handling new message:', error, message);
       }

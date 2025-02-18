@@ -9,7 +9,6 @@ router.use(auth);
 // Chat routes
 router.post('/', chatController.createChat);
 router.get('/', chatController.getUserChats);
-router.get('/unread', chatController.getUnreadCounts);
 router.get('/:chatId', chatController.getChatById);
 
 // Group chat routes

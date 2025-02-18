@@ -99,7 +99,6 @@ module.exports = (io) => {
                         sender: populatedMessage.sender,
                         chat: populatedMessage.chat,
                         createdAt: populatedMessage.createdAt,
-                        readBy: [] // Initialize empty readBy array
                     };
 
                     console.log('Broadcasting message to room:', chatId, messageData);

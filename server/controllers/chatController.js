@@ -45,11 +45,7 @@ exports.createChat = async (req, res) => {
       chatName: isGroupChat ? chatName : null,
       isGroupChat,
       users: [req.user.userId, ...validUserIds],
-      admins: isGroupChat ? [req.user.userId] : [],
-      unreadCounts: [req.user.userId, ...validUserIds].map(userId => ({
-        user: userId,
-        count: 0
-      }))
+      admins: isGroupChat ? [req.user.userId] : []
     };
 
     const newChat = await Chat.create(chatData);
@@ -107,29 +103,6 @@ exports.getUserChats = async (req, res) => {
     res.json(chats);
   } catch (error) {
     console.error('Get chats error:', error);
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// Get unread message counts
-exports.getUnreadCounts = async (req, res) => {
-  try {
-    const chats = await Chat.find({ 
-      users: req.user._id 
-    });
-
-    const unreadCounts = chats.map(chat => {
-      const userUnreadCount = chat.unreadCounts.find(
-        count => count.user.toString() === req.user.userId.toString()
-      );
-      return {
-        chatId: chat._id,
-        unreadCount: userUnreadCount ? userUnreadCount.count : 0
-      };
-    });
-
-    res.json(unreadCounts);
-  } catch (error) {
     res.status(500).json({ message: error.message });
   }
 };
@@ -202,12 +175,6 @@ exports.addToGroup = async (req, res) => {
       {
         $addToSet: { 
           users: { $each: userIds },
-          unreadCounts: { 
-            $each: userIds.map(userId => ({
-              user: userId,
-              count: 0
-            }))
-          }
         }
       },
       { new: true }
@@ -292,7 +259,6 @@ exports.leaveGroup = async (req, res) => {
         $pull: { 
           users: req.user.userId,
           admins: req.user.userId,
-          unreadCounts: { user: req.user.userId }
         }
       },
       { 
@@ -347,7 +313,6 @@ exports.removeFromGroup = async (req, res) => {
         $pull: { 
           users: userId,
           admins: userId,
-          unreadCounts: { user: userId }
         }
       },
       { 

@@ -51,7 +51,6 @@ exports.getChatMessages = async (req, res) => {
 
     const messages = await Message.find({ chat: chatId })
       .populate('sender', 'name email')
-      .populate('readBy.user', 'name email')
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(parseInt(limit));
@@ -59,51 +58,6 @@ exports.getChatMessages = async (req, res) => {
     res.json(messages.reverse());
   } catch (error) {
     console.error('Get messages error:', error);
-    res.status(500).json({ message: error.message });
-  }
-};
-
-// Mark messages as read
-exports.markMessagesAsRead = async (req, res) => {
-  try {
-    const { chatId } = req.params;
-
-    // Verify chat exists and user is a member
-    const chat = await Chat.findOne({
-      _id: chatId,
-      users: req.user.userId
-    });
-
-    if (!chat) {
-      return res.status(404).json({ message: "Chat not found or access denied" });
-    }
-
-    await Message.updateMany(
-      {
-        chat: chatId,
-        'readBy.user': { $ne: req.user.userId }
-      },
-      {
-        $addToSet: {
-          readBy: {
-            user: req.user.userId,
-            readAt: new Date()
-          }
-        }
-      }
-    );
-
-    await Chat.findByIdAndUpdate(chatId, {
-      $set: {
-        'unreadCounts.$[elem].count': 0
-      }
-    }, {
-      arrayFilters: [{ 'elem.user': req.user.userId }]
-    });
-
-    res.json({ success: true });
-  } catch (error) {
-    console.error('Mark messages read error:', error);
     res.status(500).json({ message: error.message });
   }
 };

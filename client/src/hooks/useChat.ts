@@ -115,5 +115,12 @@ export const useGroupChat = () => {
         );
       },
     }),
+
+    leaveGroup: useMutation({
+      mutationFn: (chatId: string) => chatApi.leaveGroup(chatId),
+      onSuccess: () => {
+        queryClient.invalidateQueries({ queryKey: ['chats'] });
+      },
+    }),
   };
 };
