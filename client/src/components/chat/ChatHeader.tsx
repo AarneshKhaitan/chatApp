@@ -5,6 +5,7 @@ import { Chat } from '../../types/chat';
 import { EditGroupModal } from './EditGroupModal';
 import { useNavigate } from 'react-router-dom';
 import { chatApi } from '../../api/chatApi';
+import { useChatStore } from '../../store/chatStore';  // Add this
 
 interface ChatHeaderProps {
   chat: Chat | null;
@@ -14,6 +15,7 @@ interface ChatHeaderProps {
 export const ChatHeader = ({ chat, onChatUpdate }: ChatHeaderProps) => {
   const { user } = useAuthStore();
   const navigate = useNavigate();
+  const { setActiveChat } = useChatStore();  // Add this
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
@@ -54,6 +56,7 @@ export const ChatHeader = ({ chat, onChatUpdate }: ChatHeaderProps) => {
   };
 
   const handleChatUpdate = (updatedChat: Chat) => {
+    setActiveChat(updatedChat);  // Update active chat in store
     if (onChatUpdate) {
       onChatUpdate(updatedChat);
     }

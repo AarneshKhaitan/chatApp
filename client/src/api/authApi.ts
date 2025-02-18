@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { LoginFormData, RegisterFormData, ResetPasswordFormData } from '../types/auth';
-import { User } from '../types/chat';  // Add this import
+import { User } from '../types/user'; 
 import api, { tokenService, ApiError } from './api';
 
 export interface LoginResponse {

@@ -83,17 +83,21 @@ export const useChatStore = create<ChatState>((set, get) => ({
     };
   }),
   
-  updateChat: (updatedChat) => set((state) => ({
-    chats: state.chats.map(chat => 
-      chat._id === updatedChat._id ? {
-        ...updatedChat,
-        latestMessage: chat.latestMessage // Preserve latest message
-      } : chat
-    ),
-    activeChat: state.activeChat?._id === updatedChat._id 
-      ? { ...updatedChat, latestMessage: state.activeChat.latestMessage }
-      : state.activeChat,
-  })),
+  updateChat: (updatedChat) => set((state) => {
+    // Update in chats array
+    const updatedChats = state.chats.map(chat => 
+      chat._id === updatedChat._id ? updatedChat : chat
+    );
+
+    return {
+      chats: updatedChats,
+      activeChat: state.activeChat?._id === updatedChat._id 
+        ? updatedChat 
+        : state.activeChat,
+      messages: state.messages,
+      selectedUsers: state.selectedUsers
+    };
+  }),
   
   setSelectedUsers: (users) => set({ selectedUsers: users }),
 }));

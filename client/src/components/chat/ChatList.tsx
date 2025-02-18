@@ -5,12 +5,18 @@ import { useAuthStore } from '../../store/authStore';
 import { useChats } from '../../hooks/useChat';
 import { useState, useMemo, useCallback } from 'react';
 import { NewChatButton } from './NewChatButton';
+import { LogOut } from 'lucide-react'; // Add this import
+import { useNavigate } from 'react-router-dom'; // Add this import
+import { authApi } from '../../api/authApi'; // Add this import
+import { Modal } from '../shared/Modal';  // Add this import
 
 export const ChatList = () => {
     const { activeChat, setActiveChat } = useChatStore();
     const { user } = useAuthStore();
     const { data: chats = [], isLoading, error } = useChats();
     const [searchQuery, setSearchQuery] = useState('');
+    const navigate = useNavigate(); // Add this
+    const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
 
     // Memoize helper functions
 
@@ -114,6 +120,15 @@ export const ChatList = () => {
         );
     }, [activeChat?._id, getChatDisplayName, getChatInitial, getMessageDateTime, setActiveChat]);
 
+    const handleLogout = async () => {
+        try {
+            await authApi.logout();
+            navigate('/');
+        } catch (error) {
+            console.error('Logout failed:', error);
+        }
+    };
+
     if (isLoading) {
         return <div className="h-full flex items-center justify-center">Loading...</div>;
     }
@@ -123,25 +138,64 @@ export const ChatList = () => {
     }
 
     return (
-        <div className="h-full flex flex-col">
-            <div className="p-4 border-b border-gray-100 flex items-center gap-2">
-                <input 
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="flex-1 px-4 py-3 text-sm bg-gray-50 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-900"
-                    placeholder="Search chats..."
-                />
-                <NewChatButton />
+        <>
+            <div className="h-full flex flex-col">
+                <div className="p-4 border-b border-gray-100 flex items-center gap-2">
+                    <input 
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="flex-1 px-4 py-3 text-sm bg-gray-50 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 text-gray-900"
+                        placeholder="Search chats..."
+                    />
+                    <NewChatButton />
+                </div>
+                <div className="flex-1 overflow-y-auto">
+                    {!sortedAndFilteredChats.length ? (
+                        <div className="h-full flex items-center justify-center text-gray-500">
+                            {searchQuery ? 'No matching chats found' : 'No chats found'}
+                        </div>
+                    ) : (
+                        sortedAndFilteredChats.map(renderChatItem)
+                    )}
+                </div>
+                
+                {/* Fixed footer section */}
+                <div className="p-4 border-t border-gray-100">
+                    <button
+                        onClick={() => setIsLogoutModalOpen(true)}
+                        className="w-full flex items-center justify-center gap-2 px-4 py-2 text-gray-600 hover:bg-gray-50 rounded-lg"
+                    >
+                        <LogOut className="w-4 h-4" />
+                        <span>Logout</span>
+                    </button>
+                </div>
             </div>
-            <div className="flex-1 overflow-y-auto">
-                {!sortedAndFilteredChats.length ? (
-                    <div className="h-full flex items-center justify-center text-gray-500">
-                        {searchQuery ? 'No matching chats found' : 'No chats found'}
+
+            <Modal
+                isOpen={isLogoutModalOpen}
+                onClose={() => setIsLogoutModalOpen(false)}
+                title="Confirm Logout"
+            >
+                <div className="space-y-4">
+                    <p className="text-gray-600">
+                        Are you sure you want to logout?
+                    </p>
+                    <div className="flex justify-end gap-3">
+                        <button
+                            onClick={() => setIsLogoutModalOpen(false)}
+                            className="px-4 py-2 text-gray-500 hover:bg-gray-50 rounded-lg"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={handleLogout}
+                            className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+                        >
+                            Logout
+                        </button>
                     </div>
-                ) : (
-                    sortedAndFilteredChats.map(renderChatItem)
-                )}
-            </div>
-        </div>
+                </div>
+            </Modal>
+        </>
     );
 };

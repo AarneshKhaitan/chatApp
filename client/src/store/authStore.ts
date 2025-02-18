@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import { jwtDecode } from 'jwt-decode';
-import { User } from '../types/chat';
+import { User } from '../types/user';
 import api from '../api/api'; 
 import { tokenService } from '../api/api';
 
