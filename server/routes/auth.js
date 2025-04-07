@@ -40,6 +40,4 @@ router.get('/verify-token', auth, (req, res) => {
   });
 });
 
-// Change password (protected route)
-router.post('/change-password', auth, authController.changePassword);
 module.exports = router;

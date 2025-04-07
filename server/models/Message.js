@@ -16,19 +16,14 @@ const messageSchema = new mongoose.Schema({
     ref: 'Chat',
     required: true 
   },
-  readBy: [{
-    user: { 
-      type: mongoose.Schema.Types.ObjectId, 
-      ref: 'User' 
-    },
-    readAt: { 
-      type: Date, 
-      default: Date.now 
-    }
-  }]
 }, {
   timestamps: true
 });
+
+// Add method to check if message is read by a user
+messageSchema.methods.isReadBy = function(userId) {
+  return this.readBy.some(read => read.user.toString() === userId.toString());
+};
 
 // Indexing in Message model
 messageSchema.index({ chat: 1, createdAt: -1 });

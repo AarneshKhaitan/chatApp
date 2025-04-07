@@ -3,8 +3,9 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js",
-    "dev": "nodemon index.js"
+    "start": "NODE_ENV=production node index.js",
+    "dev": "nodemon index.js",
+    "build": "npm install --production"
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -15,7 +16,10 @@
     "mongoose": "^7.0.3",
     "multer": "^1.4.5-lts.1",
     "nodemailer": "^6.9.1",
-    "socket.io": "^4.6.1"
+    "socket.io": "^4.6.1",
+    "helmet": "^7.0.0",
+    "compression": "^1.7.4",
+    "express-rate-limit": "^6.7.0"
   },
   "devDependencies": {
     "nodemon": "^2.0.22"

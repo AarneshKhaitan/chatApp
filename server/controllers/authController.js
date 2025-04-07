@@ -56,7 +56,6 @@ exports.register = async (req, res) => {
         });
     }
     catch(error){
-        console.log(error);
         res.status(500).json({error: "Registration error"});
     }
 }
@@ -96,7 +95,6 @@ exports.login = async (req, res) => {
         res.json({token, user: user.getPublicProfile()});
     }
     catch(error){
-        console.log(error);
         res.status(500).json({error: "Error logging in"});
     }
 }
@@ -125,7 +123,6 @@ exports.verifyEmail = async (req, res) => {
         });
     }
     catch(error){
-        console.log(error);
         res.status(500).json({error: "Error verifying email"});
     }
 }
@@ -164,7 +161,6 @@ exports.resendVerification = async (req, res) => {
         });
     }
     catch(error){
-        console.log(error);
         res.status(500).json({error: "Error resending verification email"});
     }
 }
@@ -264,32 +260,7 @@ exports.logout = async (req, res) => {
         res.json({message: "Logged out successfully"});
     }
     catch(error){
-        console.log(error);
         res.status(500).json({error: "Error logging out"});
     }
 }
 
-exports.changePassword = async (req, res) => {
-  try {
-    const { currentPassword, newPassword } = req.body;
-
-    const user = await User.findById(req.user.userId);
-    if (!user) {
-      return res.status(404).json({ error: 'User not found' });
-    }
-
-    // Verify current password
-    const isMatch = await user.comparePassword(currentPassword);
-    if (!isMatch) {
-      return res.status(400).json({ error: 'Current password is incorrect' });
-    }
-
-    // Update password
-    user.password = newPassword;
-    await user.save();
-
-    res.json({ message: 'Password updated successfully' });
-  } catch (error) {
-    res.status(500).json({ error: 'Error changing password' });
-  }
-};

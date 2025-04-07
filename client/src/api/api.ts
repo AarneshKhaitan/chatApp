@@ -8,8 +8,7 @@ export class ApiError extends Error {
 }
 
 const api = axios.create({
-    // Remove /api from baseURL since it's handled by the proxy
-    baseURL: "",
+    baseURL: import.meta.env.VITE_API_URL,
     headers: {
       'Content-Type': 'application/json',
       'Accept': 'application/json',
@@ -38,17 +37,9 @@ api.interceptors.request.use((config) => {
 // Modify the interceptors to hide sensitive data
 api.interceptors.request.use(
   (config) => {
-    // Only log non-sensitive information
-    console.log('Request:', {
-      url: config.url,
-      method: config.method,
-      // Remove data logging for auth endpoints
-      ...(!(config.url?.includes('/auth/')) && { data: config.data }),
-    });
     return config;
   },
   (error) => {
-    console.error('Request failed');
     return Promise.reject(error);
   }
 );
@@ -69,15 +60,10 @@ api.interceptors.response.use(
   (response) => {
     // Only log non-sensitive information
     if (!response.config.url?.includes('/auth/')) {
-      console.log('Response received');
     }
     return response;
   },
   (error) => {
-    console.error('Response Error:', {
-      status: error.response?.status,
-      message: 'Request failed'
-    });
     return Promise.reject(error);
   }
 );

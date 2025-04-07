@@ -1,0 +1,66 @@
+services:
+  backend:
+    build:
+      context: ./server
+      dockerfile: Dockerfile
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./server/.env
+    restart: unless-stopped
+    healthcheck:
+      test: wget --no-verbose --tries=1 --spider http://localhost:5000/test || exit 1
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 15s
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    networks:
+      - app_network
+
+  frontend:
+    build:
+      context: ./client
+      dockerfile: Dockerfile
+    expose:
+      - "80"
+    depends_on:
+      backend:
+        condition: service_healthy
+    env_file:
+      - ./client/.env
+    restart: unless-stopped
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    networks:
+      - app_network
+
+  caddy:
+    image: caddy:2.7.6-alpine
+    dns:
+      - 8.8.8.8
+      - 8.8.4.4
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - frontend
+      - backend
+    restart: unless-stopped
+    networks:
+      - app_network
+
+networks:
+  app_network:
+    driver: bridge
+
+volumes:
+  caddy_data:
+  caddy_config:

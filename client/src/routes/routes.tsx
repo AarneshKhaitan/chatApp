@@ -7,7 +7,6 @@ import ForgotPassword from '../pages/ForgotPassword';
 import ResetPassword from '../pages/ResetPassword';
 import ProtectedRoute from './ProtectedRoute';
 import { ChatPage } from '../pages/ChatPage';
-// import Chat from '../pages/Chat';
 
 const AppRoutes = () => {
   return (

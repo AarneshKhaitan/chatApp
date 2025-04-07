@@ -3,10 +3,10 @@ import { Menu, X } from 'lucide-react';
 import { useState, useRef, ButtonHTMLAttributes } from 'react';
 
 // Import assets
-import heroImage from '../assets/hero-bg.png';
-import messagingIcon from '../assets/message-icon.png';
-import multiPlatformIcon from '../assets/multi-platform-icon.png';
-import logo from '../assets/logo.png';
+const heroImage = '/assets/hero-bg.png';
+const messagingIcon = '/assets/message-icon.png';
+const multiPlatformIcon = '/assets/multi-platform-icon.png';
+const logo = '/assets/logo.png';
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
   variant?: 'primary' | 'secondary';

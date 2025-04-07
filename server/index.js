@@ -6,6 +6,9 @@ const http = require('http');
 const socketIo = require('socket.io');
 const auth = require('./middleware/auth');
 const jwt = require('jsonwebtoken');
+const helmet = require('helmet');
+const compression = require('compression');
+const rateLimit = require('express-rate-limit');
 
 // Import routes
 const authRoutes = require('./routes/auth');
@@ -34,6 +37,16 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Security middleware
+app.use(helmet());
+app.use(compression());
+
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100 // limit each IP to 100 requests per windowMs
+});
+app.use(limiter);
+
 // Connect to MongoDB
 connectDB();
 
@@ -61,25 +74,10 @@ io.use(async (socket, next) => {
     
     const decoded = await verifyToken(token);
     socket.user = decoded;
-    console.log('Socket authenticated:', {
-      socketId: socket.id,
-      userId: decoded.userId,
-      room: socket.rooms
-    });
     next();
   } catch (error) {
-    console.error('Socket auth error:', error);
     next(new Error('Authentication failed'));
   }
-});
-
-// Socket connection handler with logging
-io.on('connection', (socket) => {
-  console.log('New socket connection:', socket.id);
-  
-  socket.on('disconnect', () => {
-    console.log('Socket disconnected:', socket.id);
-  });
 });
 
 // Load chat handlers
@@ -98,8 +96,9 @@ app.get('/test', (req, res) => {
 
 // Error handling middleware
 app.use((err, req, res, next) => {
-  console.error('Error:', err.stack);
-  res.status(500).json({ error: err.message || 'Something went wrong!' });
+  res.status(500).json({ 
+    error: process.env.NODE_ENV === 'production' ? 'Internal Server Error' : err.message 
+  });
 });
 
 // Start server

@@ -1,12 +1,36 @@
+import { useEffect, useRef } from 'react';
 import { Message } from '../../types/chat';
 import { format, isToday, isYesterday } from 'date-fns';
+import { useSocket } from '../../hooks/useSocket';
 
 interface ChatBoxProps {
   messages: Message[];
   currentUserId: string;
+  chatId: string;
 }
 
-export const ChatBox = ({ messages, currentUserId }: ChatBoxProps) => {
+export const ChatBox = ({ messages, currentUserId, chatId }: ChatBoxProps) => {
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const { handleTyping, handleStopTyping, typingUsers } = useSocket();
+
+  // Add scroll to bottom effect
+  const scrollToBottom = () => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  };
+
+  // Scroll when messages update
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
+  // Handle typing events
+  useEffect(() => {
+    handleTyping(chatId);
+    return () => {
+      handleStopTyping(chatId);
+    };
+  }, [chatId, handleTyping, handleStopTyping]);
+
   const getDateLabel = (date: Date) => {
     if (isToday(date)) return 'Today';
     if (isYesterday(date)) return 'Yesterday';
@@ -27,7 +51,7 @@ export const ChatBox = ({ messages, currentUserId }: ChatBoxProps) => {
       {Object.entries(messagesByDate).map(([date, dateMessages]) => (
         <div key={date} className="space-y-4">
           <div className="flex items-center justify-center">
-            <div className="px-4 py-1 text-xs text-gray-500 bg-gray-100 rounded-full">
+            <div className="px-4 py-1 text-xs text-gray-500 bg-gray-100 border border-gray-200 rounded-full">
               {getDateLabel(new Date(date))}
             </div>
           </div>
@@ -40,29 +64,27 @@ export const ChatBox = ({ messages, currentUserId }: ChatBoxProps) => {
                 className={`flex ${isCurrentUser ? 'justify-end' : 'justify-start'}`}
               >
                 {!isCurrentUser && (
-                  <div className="w-8 h-8 rounded-full bg-gray-200 flex items-center justify-center text-sm font-medium mr-2 flex-shrink-0">
+                  <div className="w-8 h-8 rounded-full bg-gray-200 border border-gray-200 flex items-center justify-center text-sm font-medium text-gray-900 mr-2 flex-shrink-0">
                     {message.sender.name.charAt(0)}
                   </div>
                 )}
                 <div
                   className={`max-w-[60%] rounded-lg px-4 py-2 ${
                     isCurrentUser 
-                      ? 'bg-orange-500 text-white'
-                      : 'bg-gray-100'
+                      ? 'bg-black text-white'
+                      : 'bg-gray-100 border border-gray-200 text-gray-900'
                   }`}
                 >
                   {!isCurrentUser && (
-                    <p className="text-xs text-gray-600 font-medium mb-1">
+                    <p className="text-xs text-gray-900 font-medium mb-1">
                       {message.sender.name}
                     </p>
                   )}
                   <div className="break-words">
-                    <p className={`text-sm ${
-                        isCurrentUser ? 'text-white' : 'text-gray-900'
-                      }`}>{message.content}</p>
+                    <p className="text-sm">{message.content}</p>
                     <p 
                       className={`text-xs mt-1 text-right ${
-                        isCurrentUser ? 'text-white/80' : 'text-gray-500'
+                        isCurrentUser ? 'text-gray-500' : 'text-gray-400'
                       }`}
                     >
                       {format(new Date(message.createdAt), 'HH:mm')}
@@ -74,6 +96,12 @@ export const ChatBox = ({ messages, currentUserId }: ChatBoxProps) => {
           })}
         </div>
       ))}
+      {Object.values(typingUsers).length > 0 && (
+        <div className="text-sm text-gray-500 italic">
+          {Object.values(typingUsers).join(', ')} {Object.values(typingUsers).length === 1 ? 'is' : 'are'} typing...
+        </div>
+      )}
+      <div ref={messagesEndRef} />
     </div>
   );
 };

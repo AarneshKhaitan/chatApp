@@ -19,7 +19,6 @@ exports.searchUsers = async (req, res) => {
 
         res.json(users);
     } catch (error) {
-        console.error('Search users error:', error);
         res.status(500).json({ message: "Error searching users" });
     }
 };

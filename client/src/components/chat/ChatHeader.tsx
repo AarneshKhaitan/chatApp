@@ -1,25 +1,31 @@
 import { useState } from 'react';
-import { MoreVertical } from 'lucide-react';
+import { MoreVertical, Menu } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { Chat } from '../../types/chat';
 import { EditGroupModal } from './EditGroupModal';
 import { useNavigate } from 'react-router-dom';
-import { chatApi } from '../../api/chatApi';
+import { useGroupChat } from '../../hooks/useChat';
 
 interface ChatHeaderProps {
   chat: Chat | null;
   onChatUpdate?: (updatedChat: Chat) => void;
+  onMobileMenuOpen?: () => void;
 }
 
-export const ChatHeader = ({ chat, onChatUpdate }: ChatHeaderProps) => {
+export const ChatHeader = ({ 
+  chat, 
+  onChatUpdate,
+  onMobileMenuOpen 
+}: ChatHeaderProps) => {
   const { user } = useAuthStore();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
+  const { leaveGroup } = useGroupChat();
+
   const getOtherUser = (chat: Chat) => {
     if (!user || !chat?.users) return null;
-    // Use _id to match MongoDB id format
     return chat.users.find(u => u._id !== user._id) || null;
   };
 
@@ -44,9 +50,8 @@ export const ChatHeader = ({ chat, onChatUpdate }: ChatHeaderProps) => {
     if (!chat) return;
     
     try {
-      await chatApi.leaveGroup(chat._id);
+      await leaveGroup.mutateAsync(chat._id);
       setIsMenuOpen(false);
-      // Navigate to chats list after leaving
       navigate('/chat');
     } catch (err) {
       console.error('Failed to leave group:', err);
@@ -63,8 +68,14 @@ export const ChatHeader = ({ chat, onChatUpdate }: ChatHeaderProps) => {
 
   return (
     <>
-      <div className="p-4 border-b border-gray-100 flex items-center bg-white">
-        <div className="w-10 h-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-600">
+      <div className="p-4 border-b border-gray-200 flex items-center bg-white relative z-[30]">
+        <button
+          onClick={onMobileMenuOpen}
+          className="p-2 mr-2 rounded-lg lg:hidden text-white transition-all duration-200 transform hover:scale-105"
+        >
+          <Menu size={24} />
+        </button>
+        <div className="w-10 h-10 rounded-lg bg-black border border-black flex items-center justify-center text-white">
           {getChatInitial(chat)}
         </div>
         <div className="flex-1 ml-3">
@@ -77,50 +88,44 @@ export const ChatHeader = ({ chat, onChatUpdate }: ChatHeaderProps) => {
               : getOtherUser(chat)?.isOnline ? 'Online' : 'Offline'}
           </span>
         </div>
-        <div className="relative">
-          <button
-            className="p-2 hover:bg-gray-50 rounded-lg"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-          >
-            <MoreVertical className="w-5 h-5 text-gray-500" />
-          </button>
-          {isMenuOpen && (
-            <div className="absolute right-0 mt-2 w-48 rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5">
-              <div className="py-1">
-                {chat.isGroupChat ? (
-                  <>
+        {/* Group chat menu button and modal */}
+        {chat.isGroupChat && (
+          <>
+            <div className="relative">
+              <button
+                className="p-2 hover:bg-black hover:text-white rounded-lg transition-colors"
+                onClick={() => setIsMenuOpen(!isMenuOpen)}
+              >
+                <MoreVertical className="w-5 h-5 text-gray-600" />
+              </button>
+              {isMenuOpen && (
+                <div className="absolute right-0 mt-2 w-48 rounded-lg shadow-lg bg-black border border-gray-800">
+                  <div className="py-1">
                     <button 
                       onClick={handleEditClick}
-                      className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
+                      className="block w-full text-left px-4 py-2 text-sm text-gray-300 hover:bg-white hover:text-black transition-colors"
                     >
                       Edit Group
                     </button>
                     <button 
                       onClick={handleLeaveGroup}
-                      className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-50"
+                      className="block w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-white hover:text-red-600 transition-colors"
                     >
                       Leave Group
                     </button>
-                  </>
-                ) : (
-                  <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                    Clear Chat
-                  </button>
-                )}
-              </div>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
-        </div>
+            <EditGroupModal
+              chat={chat}
+              isOpen={isEditModalOpen}
+              onClose={() => setIsEditModalOpen(false)}
+              onUpdate={handleChatUpdate}
+            />
+          </>
+        )}
       </div>
-
-      {chat.isGroupChat && (
-        <EditGroupModal
-          chat={chat}
-          isOpen={isEditModalOpen}
-          onClose={() => setIsEditModalOpen(false)}
-          onUpdate={handleChatUpdate}
-        />
-      )}
     </>
   );
 };

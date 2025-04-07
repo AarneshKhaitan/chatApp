@@ -1,0 +1,17 @@
+node_modules
+.git
+*.log
+.env
+.env.*
+.DS_Store
+coverage
+.vscode
+*.md
+.gitignore
+.eslintrc*
+.prettier*
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+test
+__tests__

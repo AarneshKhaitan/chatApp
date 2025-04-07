@@ -5,10 +5,6 @@ export interface Message {
     sender: User;
     content: string;
     chat: Chat;
-    readBy: Array<{
-      user: User;
-      readAt: Date;
-    }>;
     createdAt: Date;
     updatedAt: Date;
 }
@@ -25,7 +21,6 @@ export interface Chat {
     users: User[];
     latestMessage?: Message;
     admins: User[];
-    unreadCounts: UnreadCount[];
     createdAt: Date;
     updatedAt: Date;
 }
