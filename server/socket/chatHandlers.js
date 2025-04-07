@@ -7,7 +7,6 @@ module.exports = (io) => {
 
     io.on('connection', async (socket) => {
         const userId = socket.user.userId;
-        console.log('User connected:', userId);
 
         // Add user to connected users
         connectedUsers.set(userId.toString(), socket.id);
@@ -61,11 +60,9 @@ module.exports = (io) => {
             socket.on('new message', async (data) => {
                 try {
                     const { chatId, content } = data;
-                    console.log('Server received new message:', { chatId, content, userId, socketRooms: Array.from(socket.rooms) });
                     
                     // Verify if socket is in the chat room
                     if (!socket.rooms.has(chatId)) {
-                        console.log('Socket not in chat room, joining...');
                         socket.join(chatId);
                     }
 
@@ -81,8 +78,6 @@ module.exports = (io) => {
                     await Chat.findByIdAndUpdate(chatId, {
                         latestMessage: newMessage._id
                     });
-
-                    console.log('Created message in DB:', newMessage);
 
                     // Get fully populated message
                     const populatedMessage = await Message.findById(newMessage._id)
@@ -100,14 +95,11 @@ module.exports = (io) => {
                         chat: populatedMessage.chat,
                         createdAt: populatedMessage.createdAt,
                     };
-
-                    console.log('Broadcasting message to room:', chatId, messageData);
                     
                     // Emit to all users in the chat including sender
                     io.in(chatId).emit('message received', messageData);
 
                 } catch (error) {
-                    console.error('New message error:', error);
                     socket.emit('message error', { error: error.message });
                 }
             });
@@ -171,7 +163,6 @@ module.exports = (io) => {
                     });
 
                     io.emit('user offline', userId);
-                    console.log('User disconnected:', userId);
                 } catch (error) {
                     console.error('Disconnect error:', error);
                 }

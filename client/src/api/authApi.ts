@@ -46,7 +46,6 @@ export const authApi = {
 
   register: async (userData: RegisterFormData): Promise<RegisterResponse> => {
     try {
-      console.log('Sending registration data:', userData);
       
       const response = await api.post('/api/auth/register', {
         name: userData.name,
@@ -54,7 +53,6 @@ export const authApi = {
         password: userData.password
       });
 
-      console.log('Registration response:', response.data);
       
       if (!response.data) {
         throw new ApiError(500, 'Invalid response format from server');
@@ -64,7 +62,6 @@ export const authApi = {
         message: response.data.message || 'Registration successful!' 
       };
     } catch (error) {
-      console.error('Registration error details:', error);
       
       if (axios.isAxiosError(error)) {
         if (!error.response) {
@@ -148,7 +145,6 @@ export const authApi = {
 
   resetPassword: async (token: string, data: ResetPasswordFormData): Promise<ResetPasswordResponse> => {
     try {
-      console.log('Attempting password reset with token:', token);
       const response = await api.post<ResetPasswordResponse>(
         `/api/auth/reset-password/${token}`,
         { password: data.password }
@@ -162,7 +158,6 @@ export const authApi = {
         message: response.data.message || 'Password reset successful'
       };
     } catch (error) {
-      console.error('Password reset error:', error);
       if (axios.isAxiosError(error)) {
         if (!error.response) {
           throw new ApiError(500, 'Network error - Please check your connection');

@@ -27,7 +27,6 @@ export const useSocket = () => {
   // Message handling with better error tracking
   useEffect(() => {
     const handleNewMessage = (message: Message) => {
-      console.log('useSocket handling new message:', message);
       try {
         if (!message?._id || !message?.content || !message?.sender) {
           throw new Error('Invalid message format');
@@ -92,9 +91,7 @@ export const useSocket = () => {
         console.error('Invalid message data:', { chatId, content });
         return false;
       }
-      
-      console.log('useSocket sending message:', { chatId, content });
-      
+            
       // Send message via socket
       socketManager.sendMessage(chatId, content.trim());
       

@@ -42,7 +42,6 @@ export const useChatStore = create<ChatState>((set, get) => ({
       .filter(msg => msg?._id && msg?.content && msg?.sender)
       .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
-    console.log('Setting messages:', validMessages.length);
     return { messages: validMessages };
   }),
 

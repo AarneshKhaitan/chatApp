@@ -29,15 +29,8 @@ export const ChatList = ({ onLogoutClick, onNewChat }: ChatListProps) => {
         if (!chat) return 'Unknown';
         if (chat.isGroupChat) return chat.chatName || 'Unnamed Group';
         
-        // Add temporary debug logging
-        console.log('Chat users:', chat.users);
-        console.log('Current user:', user);
-        
         const otherUser = getOtherUser(chat);
-        
-        // Add temporary debug logging
-        console.log('Other user found:', otherUser);
-        
+                
         return otherUser?.name || 'Unknown User';
     }, [getOtherUser, user]); // Added user to dependencies
 
@@ -54,7 +47,6 @@ export const ChatList = ({ onLogoutClick, onNewChat }: ChatListProps) => {
             const date = new Date(dateString);
             // Check if date is valid
             if (isNaN(date.getTime())) {
-                console.error('Invalid date:', dateString);
                 return '';
             }
             
@@ -63,7 +55,6 @@ export const ChatList = ({ onLogoutClick, onNewChat }: ChatListProps) => {
             }
             return format(date, 'MMM d');
         } catch (error) {
-            console.error('Date formatting error:', error);
             return '';
         }
     }, []);

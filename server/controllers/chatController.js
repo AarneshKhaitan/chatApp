@@ -66,15 +66,12 @@ exports.createChat = async (req, res) => {
           )
         )
       );
-      console.log('Added chat to all users successfully');
     } catch (updateError) {
-      console.error('Error updating user chats:', updateError);
       // Continue with response even if user update fails
     }
 
     res.status(201).json(fullChat);
   } catch (error) {
-    console.error('Chat creation error:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -82,7 +79,6 @@ exports.createChat = async (req, res) => {
 // Get all chats for a user
 exports.getUserChats = async (req, res) => {
   try {
-    console.log('Current user:', req.user); // Log the user object to see its structure
 
     const chats = await Chat.find({ 
       users: req.user.userId  // Make sure this matches how we store the ID in auth middleware
@@ -98,11 +94,9 @@ exports.getUserChats = async (req, res) => {
       })
       .sort({ updatedAt: -1 });
     
-    console.log('Found chats:', chats); // Log found chats
     
     res.json(chats);
   } catch (error) {
-    console.error('Get chats error:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -139,10 +133,6 @@ exports.getChatById = async (req, res) => {
 // Group chat functions
 exports.addToGroup = async (req, res) => {
   try {
-    console.log('Request params:', req.params);
-    console.log('Request body:', req.body);
-    console.log('Current user:', req.user);
-
     const { userIds } = req.body;
     
     // Validate userIds
@@ -151,7 +141,6 @@ exports.addToGroup = async (req, res) => {
     }
 
     const chat = await Chat.findById(req.params.chatId);
-    console.log('Found chat:', chat);
 
     if (!chat) {
       return res.status(404).json({ message: "Chat not found" });
@@ -181,10 +170,8 @@ exports.addToGroup = async (req, res) => {
     ).populate('users', '-password')
      .populate('admins', '-password');
 
-    console.log('Updated chat:', updatedChat);
     res.json(updatedChat);
   } catch (error) {
-    console.error('Add to group error:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -236,16 +223,11 @@ exports.makeAdmin = async (req, res) => {
 // Leave group chat
 exports.leaveGroup = async (req, res) => {
   try {
-    console.log('Leave group request params:', req.params);
-    console.log('Current user:', req.user);
-
     const chat = await Chat.findById(req.params.chatId);
     
     if (!chat) {
       return res.status(404).json({ message: "Chat not found" });
     }
-
-    console.log('Found chat:', chat);
 
     if (!chat.isGroupChat) {
       return res.status(400).json({ message: "This is not a group chat" });
@@ -272,10 +254,8 @@ exports.leaveGroup = async (req, res) => {
       return res.status(404).json({ message: "Failed to update chat" });
     }
 
-    console.log('Updated chat:', updatedChat);
     res.json(updatedChat);
   } catch (error) {
-    console.error('Leave group error:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -328,7 +308,6 @@ exports.removeFromGroup = async (req, res) => {
 
     res.json(updatedChat);
   } catch (error) {
-    console.error('Remove from group error:', error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -377,7 +356,6 @@ exports.updateChatName = async (req, res) => {
 
     res.json(updatedChat);
   } catch (error) {
-    console.error('Update chat name error:', error);
     res.status(500).json({ message: error.message });
   }
 };

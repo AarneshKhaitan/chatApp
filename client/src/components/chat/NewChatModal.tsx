@@ -42,9 +42,7 @@ export const NewChatModal = ({ isOpen, onClose }: NewChatModalProps) => {
             users: [userId!],
           };
       
-      console.log('Sending chat data:', chatData);
       const newChat = await createChat.mutateAsync(chatData);
-      console.log('Created chat:', newChat);
       setActiveChat(newChat);
       onClose();  // Use the provided onClose instead of setIsOpen
       // Reset state

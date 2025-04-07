@@ -28,7 +28,6 @@ exports.sendMessage = async (req, res) => {
 
         res.status(201).json(populatedMessage);
     } catch (error) {
-        console.error('Send message error:', error);
         res.status(500).json({ error: "Error sending message" });
     }
 };
@@ -57,7 +56,6 @@ exports.getChatMessages = async (req, res) => {
 
     res.json(messages.reverse());
   } catch (error) {
-    console.error('Get messages error:', error);
     res.status(500).json({ message: error.message });
   }
 };

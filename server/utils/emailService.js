@@ -38,7 +38,6 @@ exports.sendVerificationEmail = async (email, verificationUrl) => {
     });
     return true;
   } catch (error) {
-    console.error('Email sending error:', error);
     return false;
   }
 };
@@ -73,7 +72,6 @@ exports.sendPasswordResetEmail = async (email, resetUrl) => {
     });
     return true;
   } catch (error) {
-    console.error('Email sending error:', error);
     return false;
   }
 };

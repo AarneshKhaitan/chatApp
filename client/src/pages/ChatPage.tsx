@@ -42,9 +42,7 @@ export const ChatPage = () => {
   };
 
   useEffect(() => {
-    const handleNewMessage = (message: Message) => {
-      console.log('Received new message:', message);
-      
+    const handleNewMessage = (message: Message) => {      
       addMessage(message);
       queryClient.invalidateQueries({ queryKey: ['chats'] });
 

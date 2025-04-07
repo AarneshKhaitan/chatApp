@@ -30,17 +30,14 @@ class SocketManager {
     if (!this.socket) return;
 
     this.socket.on('connect', () => {
-      console.log('Socket connected with id:', this.socket?.id);
       this.emit('socketConnected', true);
     });
 
     this.socket.on('disconnect', () => {
-      console.log('Socket disconnected');
       this.emit('socketConnected', false);
     });
 
     this.socket.on('message received', (message: Message) => {
-      console.log('Socket received message from server:', message);
       if (!message?._id || !message?.content) {
         console.error('Invalid message received:', message);
         return;
@@ -87,7 +84,6 @@ class SocketManager {
       console.error('Invalid message data:', { chatId, content });
       return;
     }
-    console.log('Sending message via socket:', { chatId, content, socketId: this.socket.id });
     this.socket.emit('new message', { chatId, content });
   }
 
